@@ -59,3 +59,46 @@ def precipitation():
     precip = {date: prcp for date, prcp in precipitation}
     return jsonify(precip)
 
+#stations route
+@app.route("/api/v1.0/stations")
+ #unravel results into 1-D array
+def stations():
+    results = session.query(Station.station).all()
+    stations = list(np.ravel(results))
+    return jsonify(stations=stations)
+
+#temperature observations route
+@app.route("/api/v1.0/tobs")
+#calculate the date one year ago from the last date in the database
+#query the primary station for all the temperature observations from the previous year
+def temp_monthly():
+    prev_year = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+    results = session.query(Measurement.tobs).\
+        filter(Measurement.station == 'USC00519281').\
+        filter(Measurement.date >= prev_year).all()
+    temps = list(np.ravel(results))
+    return jsonify(temps=temps)
+
+#start end route (stats)
+#provide both a starting and ending date 2routes for final route
+@app.route("/api/v1.0/temp/<start>")
+@app.route("/api/v1.0/temp/<start>/<end>")
+#add start end parameters
+def stats(start=None, end=None):
+    #list for minimum, average, and maximum temperatures from our SQLite database
+    sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
+
+    #determine the starting and ending date using if not
+    if not end:
+        results = session.query(*sel).\
+            filter(Measurement.date >= start).all()
+        temps = list(np.ravel(results))
+        return jsonify(temps=temps)
+    
+    #calculate the temperature minimum, average, and maximum with the start and end dates using SEL list
+    results = session.query(*sel).\
+        filter(Measurement.date >= start).\
+        filter(Measurement.date <= end).all()
+    temps = list(np.ravel(results))
+    return jsonify(temps)
+
