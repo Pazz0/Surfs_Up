@@ -46,3 +46,16 @@ def welcome():
     /api/v1.0/temp/start/end
     ''')
 
+#new route precipitation! align these to the left to avoid errors
+@app.route("/api/v1.0/precipitation")
+
+def precipitation():
+    #calculates the date one year ago from the most recent date in the database
+    prev_year = dt.date(2017, 8 ,23) - dt.timedelta(days=365)
+    #get the date and precipitation for the previous year
+    precipitation = session.query(Measurement.date, Measurement.prcp).\
+      filter(Measurement.date >= prev_year).all()
+    #create dictionary w date key and the precipitation as the value - JSONIFY
+    precip = {date: prcp for date, prcp in precipitation}
+    return jsonify(precip)
+
